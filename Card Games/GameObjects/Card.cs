@@ -27,6 +27,8 @@ namespace GameObjects
 
         private FaceValue _faceValue;
         private Suit _suit;
+        private Suit? chosenSuit;
+        private FaceValue eight;
 
         /// <summary>
         /// Constructs a Card with the given Suit and FaceValue 
@@ -37,6 +39,14 @@ namespace GameObjects
         {
             _faceValue = faceValue;
             _suit = suit;
+        }
+
+        public Card(Suit? chosenSuit, FaceValue eight) {
+            this.chosenSuit = chosenSuit;
+            this.eight = eight;
+        }
+
+        public Card() {
         }
 
 
