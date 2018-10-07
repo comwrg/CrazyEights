@@ -27,23 +27,16 @@ namespace GameObjects
 
         private FaceValue _faceValue;
         private Suit _suit;
-        private Suit? chosenSuit;
-        private FaceValue eight;
 
         /// <summary>
         /// Constructs a Card with the given Suit and FaceValue 
         /// </summary>
         /// <param name="suit"></param>
         /// <param name="faceValue"></param>
-        public Card(Suit suit, FaceValue faceValue)
+        public Card(Suit? suit, FaceValue faceValue)
         {
             _faceValue = faceValue;
-            _suit = suit;
-        }
-
-        public Card(Suit? chosenSuit, FaceValue eight) {
-            this.chosenSuit = chosenSuit;
-            this.eight = eight;
+            _suit = suit.Value;
         }
 
         public Card() {

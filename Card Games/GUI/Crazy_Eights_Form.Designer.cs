@@ -82,7 +82,6 @@
             this.tblUserHand.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tblUserHand.Size = new System.Drawing.Size(1036, 100);
             this.tblUserHand.TabIndex = 3;
-
             // 
             // tblComputerHand
             // 
@@ -114,7 +113,7 @@
             this.picDrawpile.Size = new System.Drawing.Size(72, 95);
             this.picDrawpile.TabIndex = 5;
             this.picDrawpile.TabStop = false;
-
+            this.picDrawpile.Click += new System.EventHandler(this.picDrawpile_Click);
             // 
             // picDiscardpile
             // 
@@ -123,7 +122,6 @@
             this.picDiscardpile.Size = new System.Drawing.Size(72, 95);
             this.picDiscardpile.TabIndex = 6;
             this.picDiscardpile.TabStop = false;
-
             // 
             // lblInstruction
             // 
@@ -161,6 +159,7 @@
             this.btnSorthand.TabIndex = 9;
             this.btnSorthand.Text = "Sort hand";
             this.btnSorthand.UseVisualStyleBackColor = false;
+            this.btnSorthand.Click += new System.EventHandler(this.btnSorthand_Click);
             // 
             // btnExitgame
             // 
@@ -173,6 +172,7 @@
             this.btnExitgame.TabIndex = 10;
             this.btnExitgame.Text = "Exit game";
             this.btnExitgame.UseVisualStyleBackColor = false;
+            this.btnExitgame.Click += new System.EventHandler(this.btnExitgame_Click);
             // 
             // Crazy_Eights_Form
             // 

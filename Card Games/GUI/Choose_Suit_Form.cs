@@ -8,24 +8,25 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Games;
 
 namespace GUI
 {
     public partial class Choose_Suit_Form : Form
     {
-      
-
         public Choose_Suit_Form()
         {
             InitializeComponent();
         }
 
-        private void btnPlaycard_Click(object sender, EventArgs e){
+        private void btnPlaycard_Click(object sender, EventArgs e)
+        {
+            Crazy_Eights_Form.eightSuit = GetChosenSuit();
             this.Close();
         }
 
-        private void rdoChooseSuit(object sender, EventArgs e) {
-            
+        private void rdoChooseSuit(object sender, EventArgs e)
+        {
             RadioButton rdoclick = (RadioButton)sender;
             btnPlaycard.Enabled = true;
         }

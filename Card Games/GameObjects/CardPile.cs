@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -75,15 +76,13 @@ namespace GameObjects
         /// </summary>
         public void ShufflePile()/// 
         {
-            int totalCount = _pile.Count;
-            while (totalCount > 0)
+            for (int i = 0; i < _pile.Count * 100; ++i)
             {
-                totalCount--;
-                int i = _numberGenerator.Next(totalCount + 1);
-
-                Card temp = _pile[i];
-                _pile[totalCount] = _pile[i];
-                _pile[i] = temp;
+                int a = _numberGenerator.Next(_pile.Count);
+                int b = _numberGenerator.Next(_pile.Count);
+                Card temp = _pile[a];
+                _pile[a] = _pile[b];
+                _pile[b] = temp;
 
             }
         }
@@ -119,6 +118,11 @@ namespace GameObjects
                 removedPile.Add(card); //add the removeded card to new card pile
             }
             return removedPile;
+        }
+
+        public void Reverse()
+        {
+            _pile.Reverse();
         }
     }
 }

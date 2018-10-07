@@ -122,15 +122,10 @@ namespace Games {
         public static void StartGame(Hand userHand, Hand computerHand, CardPile discardPile, CardPile drawPile){
             _canplay = true;
             IsUserTurn = true;
-            discardPile = new CardPile();
-            drawPile = new CardPile(true);
-            drawPile.ShufflePile();
-            UserHand = new Hand(drawPile.DealCards(8));
-            ComputerHand = new Hand(drawPile.DealCards(8));
-            ComputerHand = computerHand;
             UserHand = userHand;
-            discardPile.AddCard(drawPile.DealOneCard());
-
+            ComputerHand = computerHand;
+            _discardPile = discardPile;
+            _drawPile = drawPile;
         }
         /// <summary>
         /// a
@@ -151,7 +146,9 @@ namespace Games {
                     return true;
                 } else if (card.GetSuit() == TopDiscard.GetSuit()){
                     return true;
-                }else if (card.GetFaceValue() == FaceValue.Eight){
+                }
+                else if (card.GetFaceValue() == FaceValue.Eight)
+                {
                     return true;
                 }
             }
@@ -189,8 +186,6 @@ namespace Games {
         /// </summary>
         /// <returns></returns>
         public static  ActionResult UserDrawCard(){
-            ActionResult action = 0;
-           
             if (IsPlaying == false){
                 throw new System.ArgumentException("This game is not start!");
             }
@@ -198,38 +193,57 @@ namespace Games {
                 throw new System.ArgumentException("This is not your turn!");
             }
 
-            Card drewcard = _drawPile.DealOneCard();
 
-            UserHand.AddCard(drewcard);
-            
-            if (IsHandPlayable(UserHand)){
-                action = ActionResult.CannotDraw;
-            } else if (IsCardPlayable(drewcard)){
-                action = ActionResult.DrewPlayableCard;
-            } else if (!IsCardPlayable(drewcard)){
-                action = ActionResult.DrewUnplayableCard;
-            }
-            else if (DrewAndNoMovePossible(drewcard, _userhand))
+            if (TopDiscard.GetFaceValue() == FaceValue.Eight)
             {
-                IsUserTurn = !IsUserTurn;
-                action = ActionResult.DrewAndNoMovePossible;
+                return ActionResult.CannotDraw;
             }
-            else if (DrewAndNoMovePossible(drewcard, _userhand) && !IsHandPlayable(_computerhand))
-            {                
-                foreach (Card card in _userhand)
+
+            foreach (Card c in UserHand)
+            {
+                if (c.GetFaceValue() == TopDiscard.GetFaceValue() || c.GetSuit() == TopDiscard.GetSuit())
                 {
-                    _drawPile.AddCard(card);
+                    return ActionResult.CannotDraw;
                 }
-                _drawPile.ShufflePile();
-                action = ActionResult.DrewAndResetPiles;
-            } 
-            else if (_drawPile.GetCount() == 0)
-            {
-                _drawPile = _discardPile;
-                _discardPile.DealCards(_discardPile.GetCount());
-                action = ActionResult.FlippedDeck;
             }
-            return action;
+
+            if (_drawPile.GetCount() == 0)
+            {
+                _discardPile.Reverse();
+                while (_discardPile.GetCount() > 1)
+                {
+                    _drawPile.AddCard(_discardPile.DealOneCard());
+                }
+                return ActionResult.FlippedDeck;
+            }
+
+            Card drawCard = _drawPile.DealOneCard();
+            UserHand.AddCard(drawCard);
+
+            if (drawCard.GetFaceValue() == TopDiscard.GetFaceValue() || drawCard.GetSuit() == TopDiscard.GetSuit())
+            {
+                return ActionResult.DrewPlayableCard;
+            }
+            else
+            {
+                if (UserHand.GetCount() == 13)
+                {
+                    IsUserTurn = false;
+                    if (ComputerHand.GetCount() == 13)
+                    {
+                        return ActionResult.DrewAndResetPiles;
+                    }
+                    else
+                    {
+                        return ActionResult.DrewAndNoMovePossible;
+                    }
+                }
+                else
+                {
+                    return ActionResult.DrewUnplayableCard;
+                }
+            }
+
 
         }
 
@@ -268,10 +282,6 @@ namespace Games {
         /// <param name="chosenSuit"></param>
         /// <returns></returns>
         public static ActionResult UserPlayCard(int cardNum, Suit? chosenSuit = null){
-
-            
-            ActionResult whichaction = new ActionResult();
-            Card card = _userhand.GetCard(cardNum);
             if (IsPlaying == false)
             {
                 throw new System.ArgumentException("This game is not start!");
@@ -280,46 +290,69 @@ namespace Games {
             {
                 throw new System.ArgumentException("This is not your turn!");
             }
-            /// how to change the suit of a card
-            if (chosenSuit != null && card.GetFaceValue() == FaceValue.Eight)
+            
+            Card card = _userhand.GetCard(cardNum);
+
+            if (_discardPile.GetCount() == 1 && TopDiscard.GetFaceValue() == FaceValue.Eight)
             {
-                Card eight = new Card(chosenSuit, FaceValue.Eight);
+                IsUserTurn = false;
                 _userhand.RemoveCardAt(cardNum);
-                _userhand.AddCard(eight);
+                _discardPile.AddCard(card);
+                return ActionResult.ValidPlay;
             }
-            if (card.GetFaceValue() == FaceValue.Eight && chosenSuit == null)
-            {
-                whichaction = ActionResult.SuitRequired;
-            }
-            /// is this the end of one game?
-            if (_userhand.ContainsCard(card) && _userhand.GetCount() == 0)
-            {
-                
 
+            if (card.GetFaceValue() == FaceValue.Eight)
+            {
+                if (!chosenSuit.HasValue)
+                {
+                    return ActionResult.SuitRequired;
+                }
 
-                whichaction = ActionResult.WinningPlay;
+                IsUserTurn = false;
+                _userhand.RemoveCardAt(cardNum);
+                _discardPile.AddCard(new Card(chosenSuit, FaceValue.Eight));
+                return ActionResult.ValidPlay;
             }
-            /// feel like it has some problems here 
-            if (_computerhand.GetCount() == 13 && IsHandPlayable(_computerhand) == false)
+            
+            if (card.GetFaceValue() == TopDiscard.GetFaceValue() || card.GetSuit() == TopDiscard.GetSuit())
             {
+                _userhand.RemoveCardAt(cardNum);
+                _discardPile.AddCard(card);
 
-                whichaction = ActionResult.ValidPlayAndExtraTurn;
+                if (UserHand.GetCount() == 0)
+                {
+                    IsPlaying = false;
+                    return ActionResult.WinningPlay;
+                }
+
+                if (ComputerHand.GetCount() == 13)
+                {
+                    foreach (Card c in ComputerHand)
+                    {
+                        if (c.GetFaceValue() == TopDiscard.GetFaceValue() || c.GetSuit() == TopDiscard.GetSuit())
+                        {
+                            IsUserTurn = false;
+                            return ActionResult.ValidPlay;
+                        }
+                    }
+                    return ActionResult.ValidPlayAndExtraTurn;
+                }
+
+                IsUserTurn = false;
+                return ActionResult.ValidPlay;
             }
-            if (_userhand.ContainsCard(card) == false)
+
+            // Invalid Play
+
+            foreach (Card c in UserHand)
             {
-                _whosturn = !_whosturn;
-                whichaction = ActionResult.ValidPlay;
+                if (c.GetFaceValue() == TopDiscard.GetFaceValue() || c.GetSuit() == TopDiscard.GetSuit() || c.GetFaceValue() == FaceValue.Eight)
+                {
+                    return ActionResult.InvalidPlay;
+                }
             }
-            /// should the computer drew a card?
-            if (DrewAndNoMovePossible(card, _userhand))
-            {
-                whichaction = ActionResult.InvalidPlayAndMustDraw;
-            }
-            if (IsCardPlayable(card) == false)
-            {
-                whichaction = ActionResult.InvalidPlay;
-            }
-            return whichaction;   
+
+            return ActionResult.InvalidPlayAndMustDraw;
         }
         
         
@@ -330,10 +363,6 @@ namespace Games {
         /// </summary>
         /// <returns></returns>
         public static ActionResult ComputerAction(){
-            ActionResult whichaction = new ActionResult();
-            Card drewcard = _drawPile.DealOneCard();
-            ///its a temp card here, need to finish more steps to get the card
-            Card card = new Card();
             if (IsPlaying == false)
             {
                 throw new System.ArgumentException("This game is not start!");
@@ -342,63 +371,147 @@ namespace Games {
             {
                 throw new System.ArgumentException("This is not your turn!");
             }
-            _computerhand.AddCard(drewcard);
-            /// comeputer moves
-            if (IsCardPlayable(drewcard))
+
+
+            if (TopDiscard.GetFaceValue() == FaceValue.Eight)
             {
-                whichaction = ActionResult.DrewPlayableCard;
+                IsUserTurn = true;
+                _discardPile.AddCard(ComputerHand.GetCard(0));
+                ComputerHand.RemoveCardAt(0);
+                return ActionResult.ValidPlay;
             }
-            else if (!IsCardPlayable(drewcard))
+
+            for (int j = 0; j < 3; ++j) // j = 0, match face, j = 1, match suit, j = 2, match eight
             {
-                whichaction = ActionResult.DrewUnplayableCard;
-            }
-            else if (DrewAndNoMovePossible(drewcard, _computerhand))
-            {
-                IsUserTurn = !IsUserTurn;
-                whichaction = ActionResult.DrewAndNoMovePossible;
-            }
-            else if (DrewAndNoMovePossible(drewcard, _computerhand) && !IsHandPlayable(_userhand))
-            {
-                foreach (Card cards in _userhand)
+                for (int i = ComputerHand.GetCount()-1; i >= 0; --i)
                 {
-                    _drawPile.AddCard(cards);
+                    Card c = ComputerHand.GetCard(i);
+                    if ((c.GetFaceValue() == TopDiscard.GetFaceValue() && j == 0) || (c.GetSuit() == TopDiscard.GetSuit() && j == 1) || (c.GetFaceValue() == FaceValue.Eight && j == 2))
+                    {
+                        IsUserTurn = false;
+                        ComputerHand.RemoveCardAt(i);
+                        _discardPile.AddCard(c);
+
+                        if (ComputerHand.GetCount() == 0)
+                        {
+                            IsPlaying = false;
+                            return ActionResult.WinningPlay;
+                        }
+
+                        if (UserHand.GetCount() == 13)
+                        {
+                            foreach (Card c1 in UserHand)
+                            {
+                                if (c1.GetFaceValue() == TopDiscard.GetFaceValue() ||
+                                    c1.GetSuit() == TopDiscard.GetSuit())
+                                {
+                                    IsUserTurn = true;
+                                    return ActionResult.ValidPlay;
+                                }
+                            }
+
+                            IsUserTurn = false;
+                            return ActionResult.ValidPlayAndExtraTurn;
+                        }
+
+                        IsUserTurn = true;
+                        return ActionResult.ValidPlay;
+                    }
                 }
-                _drawPile.ShufflePile();
-                whichaction = ActionResult.DrewAndResetPiles;
             }
-            else if (_drawPile.GetCount() == 0)
+
+            if (_drawPile.GetCount() == 0)
             {
-                _drawPile = _discardPile;
-                _discardPile.DealCards(_discardPile.GetCount());
-                whichaction = ActionResult.FlippedDeck;
+                _discardPile.Reverse();
+                while (_discardPile.GetCount() > 1)
+                {
+                    _drawPile.AddCard(_discardPile.DealOneCard());
+                }
+                return ActionResult.FlippedDeck;
             }
-            else if (_computerhand.ContainsCard(card) == false && _computerhand.GetCount() == 0)
+
+            Card drawCard = _drawPile.DealOneCard();
+            ComputerHand.AddCard(drawCard);
+
+            if (drawCard.GetFaceValue() == TopDiscard.GetFaceValue() || drawCard.GetSuit() == TopDiscard.GetSuit())
             {
-                whichaction = ActionResult.WinningPlay;
+                return ActionResult.DrewPlayableCard;
             }
-            else if (_computerhand.ContainsCard(card) == false && IsHandPlayable(_userhand))
+            else
             {
-                whichaction = ActionResult.ValidPlayAndExtraTurn;
+                if (ComputerHand.GetCount() == 13)
+                {
+                    IsUserTurn = true;
+                    if (UserHand.GetCount() == 13)
+                    {
+                        return ActionResult.DrewAndResetPiles;
+                    }
+                    else
+                    {
+                        return ActionResult.DrewAndNoMovePossible;
+                    }
+                }
+                else
+                {
+                    return ActionResult.DrewUnplayableCard;
+                }
             }
-            else if (_computerhand.ContainsCard(card) == false)
+
+            /*
+            if (card.GetFaceValue() == FaceValue.Eight)
             {
-                _whosturn = !_whosturn;
+                if (!chosenSuit.HasValue)
+                {
+                    return ActionResult.SuitRequired;
+                }
+
+                IsUserTurn = false;
+                _userhand.RemoveCardAt(cardNum);
+                _discardPile.AddCard(new Card(chosenSuit, FaceValue.Eight));
+                return ActionResult.ValidPlay;
             }
-            else if ( _computerhand.ContainsCard(card) == false && _computerhand.GetCount() == 0)
+            
+            if (card.GetFaceValue() == TopDiscard.GetFaceValue() || card.GetSuit() == TopDiscard.GetSuit())
             {
-                whichaction = ActionResult.WinningPlay;
+                _userhand.RemoveCardAt(cardNum);
+                _discardPile.AddCard(card);
+
+                if (UserHand.GetCount() == 0)
+                {
+                    IsPlaying = false;
+                    return ActionResult.WinningPlay;
+                }
+
+                if (ComputerHand.GetCount() == 13)
+                {
+                    foreach (Card c in ComputerHand)
+                    {
+                        if (c.GetFaceValue() == TopDiscard.GetFaceValue() || c.GetSuit() == TopDiscard.GetSuit())
+                        {
+                            IsUserTurn = false;
+                            return ActionResult.ValidPlay;
+                        }
+                    }
+                    return ActionResult.ValidPlayAndExtraTurn;
+                }
+
+                IsUserTurn = false;
+                return ActionResult.ValidPlay;
             }
-            /// feel like it has some problems here 
-            else if (_computerhand.ContainsCard(card) == false && IsHandPlayable(_computerhand))
+
+            // Invalid Play
+
+            foreach (Card c in UserHand)
             {
-                whichaction = ActionResult.ValidPlayAndExtraTurn;
+                if (c.GetFaceValue() == TopDiscard.GetFaceValue() || c.GetSuit() == TopDiscard.GetSuit())
+                {
+                    return ActionResult.InvalidPlay;
+                }
             }
-            else if (_computerhand.ContainsCard(card) == false)
-            {
-                _whosturn = !_whosturn;
-                whichaction = ActionResult.ValidPlay;
-            }
-            return whichaction;
+
+            return ActionResult.InvalidPlayAndMustDraw;
+             */
+
         }
     }
 }
